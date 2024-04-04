@@ -1,23 +1,20 @@
 package main
 
-import "github.com/stevensopilidis/monkey/token"
+import (
+	"fmt"
+	"os"
+	"os/user"
+
+	"github.com/stevensopilidis/monkey/repl"
+)
 
 func main() {
-	tests := []struct {
-		expectedType    token.TokenType
-		expectedLiteral string
-	}{
-		{token.ASSIGN, "="},
-		{token.PLUS, "+"},
-		{token.LPAREN, "("},
-		{token.RPAREN, ")"},
-		{token.LBRACE, "{"},
-		{token.RBRACE, "}"},
-		{token.COMMA, ","},
-		{token.SEMICOLON, ";"},
-		{token.EOF, ""},
+	user, err := user.Current()
+	if err != nil {
+		panic(err)
 	}
-	for _, tc := range tests {
-		print(tc.expectedType)
-	}
+	fmt.Printf("Hello %s! This is the Monkey programming language!\n",
+		user.Username)
+	fmt.Printf("Feel free to type in commands\n")
+	repl.Start(os.Stdin, os.Stdout)
 }
