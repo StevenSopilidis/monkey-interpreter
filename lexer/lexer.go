@@ -96,7 +96,7 @@ func (l *Lexer) NextToken() token.Token {
 		} else if isDigit(l.ch) {
 			var finalNum string
 			num1 := l.readNumber()
-			if l.peekBackwardsChar() == '.' {
+			if l.readPosition < len(l.input) && l.peekBackwardsChar() == '.' {
 				l.readChar()
 				if isDigit(l.peekChar()) {
 					num2 := l.readNumber()
