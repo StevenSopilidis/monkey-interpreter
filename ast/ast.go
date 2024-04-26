@@ -48,6 +48,16 @@ func (p *Program) TokenLiteral() string {
 	return ""
 }
 
+// struct that represenst a Bool (Expression)
+type Boolean struct {
+	Token token.Token // token.TRUE || token.FALSE
+	Value bool
+}
+
+func (b Boolean) String() string       { return b.Token.Literal }
+func (b Boolean) expressionNode()      {}
+func (b Boolean) TokenLiteral() string { return b.Token.Literal }
+
 // struct that represents an identifier (Expression)
 type Identifier struct {
 	Token token.Token // token.IDENT
