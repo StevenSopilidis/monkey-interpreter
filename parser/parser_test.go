@@ -452,3 +452,129 @@ func TestIfElseExpression(t *testing.T) {
 
 	testIdentifier(t, alternative.Expression, "y")
 }
+
+// function for testing the parsing of the function's parameters
+func TestFunctionParameterParsing(t *testing.T) {
+	tests := []struct {
+		input          string
+		expectedParams []string
+	}{
+		{input: "fn() {};", expectedParams: []string{}},
+		{input: "fn(x) {};", expectedParams: []string{"x"}},
+		{input: "fn(x, y, z) {};", expectedParams: []string{"x", "y", "z"}},
+	}
+
+	for _, tc := range tests {
+		l := lexer.New(tc.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		stmt, ok := program.Statements[0].(ast.ExpressionStatement)
+		require.True(t, ok)
+		function, ok := stmt.Expression.(ast.FunctionLiteral)
+		require.True(t, ok)
+
+		require.Equal(t, len(tc.expectedParams), len(function.Parameters))
+
+		for i, ident := range tc.expectedParams {
+			testLiteralExpression(t, function.Parameters[i], ident)
+		}
+	}
+}
+
+// function for testing the parsing of functions
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	require.Equal(t, 1, len(program.Statements))
+
+	stmt, ok := program.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+
+	function, ok := stmt.Expression.(ast.FunctionLiteral)
+	require.True(t, ok)
+
+	require.Equal(t, 2, len(function.Parameters))
+	testLiteralExpression(t, function.Parameters[0], "x")
+	testLiteralExpression(t, function.Parameters[1], "y")
+
+	require.Equal(t, 1, len(function.Body.Statements))
+
+	bodyStmt, ok := function.Body.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+
+	testInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
+}
+
+// function for testing call expressions
+func TestCallExpressionParsing(t *testing.T) {
+	input := "add(1, 2 * 3, 4 + 5);"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	require.Equal(t, 1, len(program.Statements))
+
+	stmt, ok := program.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+
+	exp, ok := stmt.Expression.(ast.CallExpression)
+	require.True(t, ok)
+
+	testIdentifier(t, exp.Function, "add")
+
+	require.Equal(t, 3, len(exp.Arguments))
+
+	testLiteralExpression(t, exp.Arguments[0], 1)
+	testInfixExpression(t, exp.Arguments[1], 2, "*", 3)
+	testInfixExpression(t, exp.Arguments[2], 4, "+", 5)
+}
+
+// function for testing the parsing of arguments in a call
+func TestCallExpressionParameterParsing(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedIdent string
+		expectedArgs  []string
+	}{
+		{
+			input:         "add();",
+			expectedIdent: "add",
+			expectedArgs:  []string{},
+		},
+		{
+			input:         "add(1);",
+			expectedIdent: "add",
+			expectedArgs:  []string{"1"},
+		},
+		{
+			input:         "add(1, 2 * 3, 4 + 5);",
+			expectedIdent: "add",
+			expectedArgs:  []string{"1", "(2 * 3)", "(4 + 5)"},
+		},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		stmt := program.Statements[0].(ast.ExpressionStatement)
+		exp, ok := stmt.Expression.(ast.CallExpression)
+		require.True(t, ok)
+
+		testIdentifier(t, exp.Function, tt.expectedIdent)
+
+		require.Equal(t, len(tt.expectedArgs), len(exp.Arguments))
+
+		for i, arg := range tt.expectedArgs {
+			require.Equal(t, exp.Arguments[i].String(), arg)
+		}
+	}
+}
