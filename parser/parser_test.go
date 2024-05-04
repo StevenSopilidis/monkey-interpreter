@@ -394,3 +394,61 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		require.Equal(t, actual, tc.expected)
 	}
 }
+
+// function for testing parsing on if expressions
+func TestIfExpression(t *testing.T) {
+	input := `if (x < y) { x }`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	require.Equal(t, 1, len(program.Statements))
+	stmt, ok := program.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+
+	exp, ok := stmt.Expression.(ast.IfExpression)
+	require.True(t, ok)
+
+	testInfixExpression(t, exp.Condition, "x", "<", "y")
+
+	// test consequence
+	require.Equal(t, 1, len(exp.Consequence.Statements))
+	consequence, ok := exp.Consequence.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+	testIdentifier(t, consequence.Expression, "x")
+
+	// test alternative
+	require.Nil(t, exp.Alternative)
+}
+
+// function for testing parsing on if-else expressions
+func TestIfElseExpression(t *testing.T) {
+	input := `if (x < y) { x } else {y}`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	require.Equal(t, 1, len(program.Statements))
+	stmt, ok := program.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+
+	exp, ok := stmt.Expression.(ast.IfExpression)
+	require.True(t, ok)
+
+	testInfixExpression(t, exp.Condition, "x", "<", "y")
+
+	// test consequence
+	require.Equal(t, 1, len(exp.Consequence.Statements))
+	consequence, ok := exp.Consequence.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+
+	testIdentifier(t, consequence.Expression, "x")
+	// test alternative
+	require.Equal(t, 1, len(exp.Consequence.Statements))
+	alternative, ok := exp.Alternative.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+
+	testIdentifier(t, alternative.Expression, "y")
+}
