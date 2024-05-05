@@ -11,30 +11,29 @@ import (
 )
 
 func TestLetStatements(t *testing.T) {
-	input := `
-		let x = 5.34;
-		let y = 10;
-		let foobar = 838383;
-	`
-
-	l := lexer.New(input)
-	p := New(l)
-	program := p.ParseProgram()
-	checkParserErrors(t, p)
-	require.NotNil(t, program)
-	require.Equal(t, 3, len(program.Statements))
-
-	tests := []struct {
+	testCases := []struct {
+		input              string
 		expectedIdentifier string
+		expectedValue      interface{}
 	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
+		{"let x = 5;", "x", 5},
+		{"let y = true;", "y", true},
+		{"let foobar = y;", "foobar", "y"},
+		{"let fl = 32.24213;", "fl", 32.24213},
 	}
 
-	for i, tt := range tests {
-		stmt := program.Statements[i]
-		testLetStatement(t, stmt, tt.expectedIdentifier)
+	for _, tc := range testCases {
+		l := lexer.New(tc.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		require.Equal(t, 1, len(program.Statements))
+
+		stmt := program.Statements[0]
+		testLetStatement(t, stmt, tc.expectedIdentifier)
+
+		val := stmt.(ast.LetStatement).Value
+		testLiteralExpression(t, val, tc.expectedValue)
 	}
 }
 
@@ -49,23 +48,26 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) {
 }
 
 func TestReturnStatements(t *testing.T) {
-	input := `
-		return 5;
-		return 10.5;
-		return 90234123;
-	`
+	testsCases := []struct {
+		input         string
+		expectedValue interface{}
+	}{
+		{"return 5;", 5},
+		{"return true;", true},
+		{"return foobar;", "foobar"},
+	}
 
-	l := lexer.New(input)
-	p := New(l)
-	program := p.ParseProgram()
-	checkParserErrors(t, p)
-	require.NotNil(t, program)
-	require.Equal(t, 3, len(program.Statements))
+	for _, tc := range testsCases {
+		l := lexer.New(tc.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		require.Equal(t, 1, len(program.Statements))
 
-	for _, stmt := range program.Statements {
-		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		returnStmt, ok := program.Statements[0].(ast.ReturnStatement)
 		require.True(t, ok)
 		require.Equal(t, "return", returnStmt.TokenLiteral())
+		testLiteralExpression(t, returnStmt.ReturnValue, tc.expectedValue)
 	}
 }
 
