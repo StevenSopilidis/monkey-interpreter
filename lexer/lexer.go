@@ -1,6 +1,8 @@
 package lexer
 
 import (
+	"strings"
+
 	"github.com/stevensopilidis/monkey/token"
 )
 
@@ -94,23 +96,17 @@ func (l *Lexer) NextToken() token.Token {
 			tok.Type = token.LookUpIdent(tok.Literal)
 			return tok
 		} else if isDigit(l.ch) {
-			var finalNum string
-			num1 := l.readNumber()
-			if l.readPosition < len(l.input) && l.peekBackwardsChar() == '.' {
-				l.readChar()
-				if isDigit(l.peekChar()) {
-					num2 := l.readNumber()
-					finalNum = num1 + "." + num2
-				} else {
-					finalNum = num1 + "."
-				}
+			num := l.readNumber()
+			parts := strings.Split(num, ".")
+			if len(parts) == 2 {
+				// float
 				tok.Type = token.FLOAT
-				tok.Literal = finalNum
+				tok.Literal = parts[0] + "." + parts[1]
 			} else {
 				tok.Type = token.INT
-				tok.Literal = num1
+				tok.Literal = parts[0]
 			}
-			return tok
+			l.decrementReadPosition()
 		} else {
 			tok = newToken(token.ILLEGAL, l.ch)
 		}
@@ -134,7 +130,7 @@ func isLetter(ch byte) bool {
 
 // func that determines if character is digit
 func isDigit(ch byte) bool {
-	return '0' <= ch && ch <= '9'
+	return '0' <= ch && ch <= '9' || ch == '.'
 }
 
 // function for reading an identifier
@@ -162,8 +158,8 @@ func (l *Lexer) skipWhiteSpace() {
 	}
 }
 
-func (l *Lexer) peekBackwardsChar() byte {
-	return l.input[l.readPosition-1]
+func (l *Lexer) decrementReadPosition() {
+	l.readPosition -= 1
 }
 
 // function that peeks at the next read char
