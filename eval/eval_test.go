@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stevensopilidis/monkey/lexer"
@@ -8,6 +9,59 @@ import (
 	"github.com/stevensopilidis/monkey/parser"
 	"github.com/stretchr/testify/require"
 )
+
+func TestReturnStatements(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected int64
+	}{
+		{"return 10;", 10},
+		{"return 10; 9;", 10},
+		{"return 2 * 5; 9;", 10},
+		{"9; return 2 * 5; 9;", 10},
+		{`
+			if (10 > 1) {
+				if (10 > 1) {
+					return 10;
+				}
+				return 1;
+			}`, 10},
+	}
+
+	for _, tc := range testCases {
+		evaluated := testEval(tc.input)
+		testIntegerObject(t, evaluated, int64(tc.expected))
+	}
+}
+
+func TestIfElseExpressions(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected interface{}
+	}{
+		{"if (true) { 10 }", 10},
+		{"if (false) { 10 }", nil},
+		{"if (1) { 10 }", 10},
+		{"if (1 < 2) { 10 }", 10},
+		{"if (1 > 2) { 10 }", nil},
+		{"if (1 > 2) { 10 } else { 20 }", 20},
+		{"if (1 < 2) { 10 } else { 20 }", 10},
+	}
+
+	for _, tc := range testCases {
+		evaluated := testEval(tc.input)
+		expectedValue, ok := tc.expected.(int)
+		if ok {
+			testIntegerObject(t, evaluated, int64(expectedValue))
+		} else {
+			testNullObject(t, evaluated)
+		}
+	}
+}
+
+func testNullObject(t *testing.T, obj object.Object) {
+	require.Equal(t, obj, NULL)
+}
 
 func TestBangOperator(t *testing.T) {
 	testCases := []struct {
@@ -145,6 +199,9 @@ func testEval(input string) object.Object {
 
 // function for testing the value of Integer Object
 func testIntegerObject(t *testing.T, obj object.Object, expected int64) {
+	if obj == nil {
+		fmt.Println("NILLL")
+	}
 	result, ok := obj.(*object.Integer)
 	require.True(t, ok)
 

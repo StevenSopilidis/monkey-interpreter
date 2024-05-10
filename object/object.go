@@ -5,11 +5,24 @@ import "fmt"
 type ObjectType string
 
 const (
-	INTEGER_OBJ = "INTEGER"
-	BOOLEAN_OBJ = "BOOLEAN"
-	FLOAT_OBJ   = "FLOAT"
-	NULL_OBJ    = "NULL"
+	INTEGER_OBJ      = "INTEGER"
+	BOOLEAN_OBJ      = "BOOLEAN"
+	FLOAT_OBJ        = "FLOAT"
+	NULL_OBJ         = "NULL"
+	RETURN_VALUE_OBJ = "RETURN_VALUE"
 )
+
+// struct that wraps a return value
+type ReturnValue struct {
+	Value Object
+}
+
+func (rv ReturnValue) Type() ObjectType {
+	return RETURN_VALUE_OBJ
+}
+func (rv ReturnValue) Inspect() string {
+	return rv.Value.Inspect()
+}
 
 // struct that will wrap every object (type) in our language
 type Object interface {

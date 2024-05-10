@@ -1,8 +1,6 @@
 package eval
 
 import (
-	"fmt"
-
 	"github.com/stevensopilidis/monkey/ast"
 	"github.com/stevensopilidis/monkey/object"
 )
@@ -16,7 +14,7 @@ var (
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
-		return evalStatement(node.Statements)
+		return evalProgram(node.Statements)
 	case ast.ExpressionStatement:
 		return Eval(node.Expression)
 	case ast.IntegerLiteral:
@@ -32,9 +30,50 @@ func Eval(node ast.Node) object.Object {
 		left := Eval(node.Left)
 		right := Eval(node.Right)
 		return evalInfixExpression(node.Operator, left, right)
+	case *ast.BlockStatement:
+		return evalBlockStatement(node)
+	case ast.ReturnStatement:
+		val := Eval(node.ReturnValue)
+		return object.ReturnValue{Value: val}
+	case ast.IfExpression:
+		return evalIfExpression(node)
 	}
 
 	return nil
+}
+
+// function for evaluating if-else expressions
+func evalIfExpression(ie ast.IfExpression) object.Object {
+	condition := Eval(ie.Condition)
+
+	if isTruthy(condition) {
+		return Eval(ie.Consequence)
+	} else if ie.Alternative != nil {
+		return Eval(ie.Alternative)
+	} else {
+		return NULL
+	}
+}
+
+// function that evaluates if a condition is truthy (not false or null)
+func isTruthy(obj object.Object) bool {
+	if obj == NULL || obj == FALSE {
+		return false
+	}
+
+	return true
+}
+
+// function for evaluating a block statement
+func evalBlockStatement(block *ast.BlockStatement) object.Object {
+	var result object.Object
+	for _, statement := range block.Statements {
+		result = Eval(statement)
+		if result != nil && result.Type() == object.RETURN_VALUE_OBJ {
+			return result
+		}
+	}
+	return result
 }
 
 // function for evaluating an infix expression
@@ -50,7 +89,6 @@ func evalInfixExpression(operator string, left object.Object, right object.Objec
 	}
 
 	if left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ {
-		fmt.Println("---> WTFFF")
 		return evalIntegerInfixExpression(operator, left, right)
 	}
 
@@ -176,11 +214,17 @@ func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	return FALSE
 }
 
-func evalStatement(stmts []ast.Statement) object.Object {
+func evalProgram(stmts []ast.Statement) object.Object {
 	var result object.Object
 
 	for _, stmt := range stmts {
 		result = Eval(stmt)
+
+		if returnValue, ok := result.(object.ReturnValue); ok {
+			// if returnValue encountered return it without evaluating
+			// left over statements
+			return returnValue.Value
+		}
 	}
 
 	return result
