@@ -10,7 +10,20 @@ const (
 	FLOAT_OBJ        = "FLOAT"
 	NULL_OBJ         = "NULL"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
+	ERROR_OBJ        = "ERROR"
 )
+
+// struct that defines an error
+type Error struct {
+	Message string
+}
+
+func (e Error) Type() ObjectType {
+	return ERROR_OBJ
+}
+func (e Error) Inspect() string {
+	return "ERROR: " + e.Message
+}
 
 // struct that wraps a return value
 type ReturnValue struct {
@@ -53,7 +66,7 @@ func (i Boolean) Inspect() string {
 }
 
 func (i Boolean) Type() ObjectType {
-	return INTEGER_OBJ
+	return BOOLEAN_OBJ
 }
 
 // internal representation of float
