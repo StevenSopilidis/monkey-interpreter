@@ -10,7 +10,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestErroHandling(t *testing.T) {
+func TestLetStatements(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected int64
+	}{
+		{"let a = 5; a;", 5},
+		{"let a = 5 * 5; a;", 25},
+		{"let a = 5; let b = a; b;", 5},
+		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+	}
+
+	for _, tc := range testCases {
+		testIntegerObject(t, testEval(tc.input), tc.expected)
+	}
+}
+
+func TestErrorHandling(t *testing.T) {
 	testCases := []struct {
 		input                string
 		expectedErrorMessage string
@@ -49,6 +65,10 @@ func TestErroHandling(t *testing.T) {
 			}
 			`,
 			"unknown operator: BOOLEAN + BOOLEAN",
+		},
+		{
+			"foobar",
+			"identifier not found: foobar",
 		},
 	}
 
@@ -245,8 +265,9 @@ func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)
 	program := p.ParseProgram()
+	env := object.NewEnvironment()
 
-	return Eval(program)
+	return Eval(program, env)
 }
 
 // function for testing the value of Integer Object
