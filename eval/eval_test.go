@@ -10,6 +10,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestClosures(t *testing.T) {
+	input := `
+	let newAdder = fn(x) {
+		fn(y) { x + y };
+	};
+	let addTwo = newAdder(2);
+	addTwo(2);`
+	testIntegerObject(t, testEval(input), 4)
+}
+
+func TestFunctionApplication(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected int64
+	}{
+		{"let identity = fn(x) { x; }; identity(5);", 5},
+		{"let identity = fn(x) { return x; }; identity(5);", 5},
+		{"let double = fn(x) { x * 2; }; double(5);", 10},
+		{"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+		{"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+		{"fn(x) { x; }(5)", 5},
+	}
+	for _, tc := range testCases {
+		testIntegerObject(t, testEval(tc.input), tc.expected)
+	}
+}
+
+func TestFunctionObject(t *testing.T) {
+	input := "fn(x) { x + 2; }"
+
+	evaluated := testEval(input)
+	fn, ok := evaluated.(object.Function)
+	require.True(t, ok)
+
+	require.Equal(t, 1, len(fn.Parameters))
+	require.Equal(t, "x", fn.Parameters[0].String())
+	require.Equal(t, "(x + 2)", fn.Body.String())
+}
+
 func TestLetStatements(t *testing.T) {
 	testCases := []struct {
 		input    string
