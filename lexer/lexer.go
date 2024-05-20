@@ -86,7 +86,9 @@ func (l *Lexer) NextToken() token.Token {
 			// assignment operator
 			tok = newToken(token.BANG, l.ch)
 		}
-
+	case '"':
+		tok.Type = token.STRING
+		tok.Literal = l.readString()
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
@@ -121,6 +123,19 @@ func newToken(tokenType token.TokenType, ch byte) token.Token {
 		Type:    tokenType,
 		Literal: string(ch),
 	}
+}
+
+// function for parsing a string literal
+func (l *Lexer) readString() string {
+	position := l.readPosition
+	for {
+		l.readChar()
+		if l.ch == '"' || l.ch == 0 {
+			break
+		}
+	}
+
+	return l.input[position:l.position]
 }
 
 // function that determines if character is letter

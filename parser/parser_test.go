@@ -10,6 +10,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestStringLiteralExpression(t *testing.T) {
+	input := `"hello world";`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	stmt := program.Statements[0].(ast.ExpressionStatement)
+	literal, ok := stmt.Expression.(ast.StringLiteral)
+	require.True(t, ok)
+	require.Equal(t, literal.Value, "hello world")
+}
+
 func TestLetStatements(t *testing.T) {
 	testCases := []struct {
 		input              string

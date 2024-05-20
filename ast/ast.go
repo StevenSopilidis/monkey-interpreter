@@ -134,6 +134,16 @@ func (ie IfExpression) String() string {
 	return out.String()
 }
 
+// struct that represents a string literal
+type StringLiteral struct {
+	Token token.Token // token.STRING
+	Value string
+}
+
+func (s StringLiteral) String() string       { return s.Token.Literal }
+func (s StringLiteral) expressionNode()      {}
+func (s StringLiteral) TokenLiteral() string { return s.Token.Literal }
+
 // struct that represenst a Bool (Expression)
 type Boolean struct {
 	Token token.Token // token.TRUE || token.FALSE

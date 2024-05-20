@@ -43,8 +43,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(right) {
 			return right
 		}
-
 		return evalInfixExpression(node.Operator, left, right)
+	case ast.StringLiteral:
+		return object.String{Value: node.Value}
 	case *ast.BlockStatement:
 		return evalBlockStatement(node, env)
 	case ast.ReturnStatement:
@@ -229,7 +230,23 @@ func evalInfixExpression(operator string, left object.Object, right object.Objec
 		return evalFloatInfixExpression(operator, left, right)
 	}
 
+	if left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ {
+		return evalStringInfixExpression(operator, left, right)
+	}
+
 	return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+}
+
+// function for evaluating infix operations applied to strings
+func evalStringInfixExpression(operator string, left object.Object, right object.Object) object.Object {
+	if operator != "+" {
+		return newError("unknown operator: %s %s %s",
+			left.Type(), operator, right.Type())
+	}
+
+	leftVal := left.(object.String).Value
+	rightVal := right.(object.String).Value
+	return object.String{Value: leftVal + rightVal}
 }
 
 // function for evaluating infix expression where at least operands are floats
