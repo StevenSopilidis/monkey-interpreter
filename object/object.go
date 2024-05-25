@@ -19,6 +19,7 @@ const (
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
 	STRING_OBJ       = "STRING"
+	BULTIN_OBJ       = "BULTIN"
 )
 
 // environment will keep track of the values of the identifiers
@@ -51,6 +52,21 @@ func (e *Environment) Get(name string) (Object, bool) {
 func (e *Environment) Set(name string, val Object) Object {
 	e.store[name] = val
 	return val
+}
+
+// built in function
+type BultinFunction func(args ...Object) Object
+
+type Bultin struct {
+	Fn BultinFunction
+}
+
+func (b Bultin) Type() ObjectType {
+	return BULTIN_OBJ
+}
+
+func (b Bultin) Inspect() string {
+	return "bultin function"
 }
 
 // struct representing a string

@@ -85,14 +85,16 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 // function for returning result from function
 func applyFunction(fn object.Object, args []object.Object) object.Object {
-	function, ok := fn.(object.Function)
-	if !ok {
+	switch fn := fn.(type) {
+	case object.Function:
+		extendedEnv := extendedFunctionEnv(fn, args)
+		evaluated := Eval(fn.Body, extendedEnv)
+		return unwrapReturnValue(evaluated)
+	case object.Bultin:
+		return fn.Fn(args...)
+	default:
 		return newError("not a function: %s", fn.Type())
 	}
-
-	extendedEnv := extendedFunctionEnv(function, args)
-	evaluated := Eval(function.Body, extendedEnv)
-	return unwrapReturnValue(evaluated)
 }
 
 // function for created extended env for a function
@@ -134,12 +136,15 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 
 // function for evaluating an identifier
 func evalIdentifier(node ast.Identifier, env *object.Environment) object.Object {
-	val, ok := env.Get(node.Value)
-	if !ok {
-		return newError("identifier not found: " + node.Value)
+	if val, ok := env.Get(node.Value); ok {
+		return val
 	}
 
-	return val
+	if bultin, ok := bultins[node.Value]; ok {
+		return bultin
+	}
+
+	return newError("identifier not found: " + node.Value)
 }
 
 // function for checking if object is Error

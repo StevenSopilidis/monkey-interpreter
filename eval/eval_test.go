@@ -10,6 +10,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestBultinFunctions(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`len("")`, 0},
+		{`len("four")`, 4},
+		{`len("hello world")`, 11},
+		{`len(1)`, "argument to `len` not supported, got INTEGER"},
+		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
+	}
+
+	for _, tc := range testCases {
+		evaluated := testEval(tc.input)
+		switch expected := tc.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case string:
+			errObj, ok := evaluated.(*object.Error)
+			require.True(t, ok)
+			require.Equal(t, expected, errObj.Message)
+		}
+	}
+}
+
 func TestClosures(t *testing.T) {
 	input := `
 	let newAdder = fn(x) {
