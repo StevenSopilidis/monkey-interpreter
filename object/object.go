@@ -20,6 +20,7 @@ const (
 	FUNCTION_OBJ     = "FUNCTION"
 	STRING_OBJ       = "STRING"
 	BULTIN_OBJ       = "BULTIN"
+	ARRAY_OBJ        = "ARRAY"
 )
 
 // environment will keep track of the values of the identifiers
@@ -52,6 +53,29 @@ func (e *Environment) Get(name string) (Object, bool) {
 func (e *Environment) Set(name string, val Object) Object {
 	e.store[name] = val
 	return val
+}
+
+// struct representing array
+type Array struct {
+	Elements []Object
+}
+
+func (arr Array) Type() ObjectType {
+	return ARRAY_OBJ
+}
+
+func (arr Array) Inspect() string {
+	var out bytes.Buffer
+	elements := []string{}
+
+	for _, e := range arr.Elements {
+		elements = append(elements, e.Inspect())
+	}
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("]")
+	return out.String()
 }
 
 // built in function

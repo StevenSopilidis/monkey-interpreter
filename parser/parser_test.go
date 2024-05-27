@@ -10,6 +10,41 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestParsingIndexExpression(t *testing.T) {
+	input := "myArray[1 + 1]"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	stmt, ok := program.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+
+	indexExp, ok := stmt.Expression.(ast.IndexExpression)
+	require.True(t, ok)
+
+	testIdentifier(t, indexExp.Left, "myArray")
+	testInfixExpression(t, indexExp.Index, 1, "+", 1)
+}
+
+func TestParsingArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	stmt, ok := program.Statements[0].(ast.ExpressionStatement)
+	require.True(t, ok)
+	array, ok := stmt.Expression.(ast.ArrayLiteral)
+	require.True(t, ok)
+	require.Equal(t, 3, len(array.Elements))
+
+	testIntOrFloatLiteral(t, array.Elements[0], "1")
+	testInfixExpression(t, array.Elements[1], 2, "*", 2)
+	testInfixExpression(t, array.Elements[2], 3, "+", 3)
+}
+
 func TestStringLiteralExpression(t *testing.T) {
 	input := `"hello world";`
 
@@ -265,6 +300,7 @@ func testIntOrFloatLiteral(t *testing.T, exp ast.Expression, value string) {
 	require.True(t, ok)
 	val, err := strconv.ParseInt(value, 0, 64)
 	require.NoError(t, err)
+
 	require.Equal(t, val, il.Value)
 }
 
@@ -397,6 +433,14 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{
 			"(5 + 5) * 2",
 			"((5 + 5) * 2)",
+		},
+		{
+			"a * [1, 2, 3, 4][b * c] * d",
+			"((a * ([1, 2, 3, 4][(b * c)])) * d)",
+		},
+		{
+			"add(a * b[2], b[1], 2 * [1, 2][1])",
+			"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
 		},
 	}
 
