@@ -38,6 +38,8 @@ func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
 	}
 
 	switch operandCount {
+	case 0:
+		return def.Name
 	case 1:
 		return fmt.Sprintf("%s %d", def.Name, operands[0])
 	}
@@ -50,6 +52,8 @@ const (
 	// takes one operand which is the index of constant and
 	// pushes it into the stack
 	OpConstant Opcode = iota
+	// operation that adds the above 2 elements from the stack
+	OpAdd
 )
 
 type Definition struct {
@@ -60,6 +64,7 @@ type Definition struct {
 // struct that holds definitions for all of our opcodes
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
+	OpAdd:      {"OpAdd", []int{}},
 }
 
 func Lookup(op byte) (*Definition, error) {

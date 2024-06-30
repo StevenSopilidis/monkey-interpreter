@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"github.com/stevensopilidis/monkey/ast"
 	"github.com/stevensopilidis/monkey/code"
 	"github.com/stevensopilidis/monkey/object"
@@ -49,6 +51,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
+
+		switch node.Operator {
+		case "+":
+			c.emit(code.OpAdd)
+		default:
+			return fmt.Errorf("unknown operator %s", node.Operator)
+		}
+
 	case ast.IntegerLiteral:
 		// parse integerliteral and push it to constant pool
 		integer := &object.Integer{Value: node.Value}
