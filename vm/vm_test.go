@@ -30,7 +30,7 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		err = vm.Run()
 		require.NoError(t, err)
 
-		stackElem := vm.StackTop()
+		stackElem := vm.LastPoppedStackElement()
 		testExpectedObject(t, tc.expected, stackElem)
 	}
 }
@@ -54,6 +54,7 @@ func parse(input string) *ast.Program {
 	p := parser.New(l)
 	return p.ParseProgram()
 }
+
 func testIntegerObject(t *testing.T, expected int64, actual object.Object) error {
 	result, ok := actual.(*object.Integer)
 
@@ -68,6 +69,15 @@ func TestIntegerArithmetic(t *testing.T) {
 		{"1", 1},
 		{"2", 2},
 		{"1 + 2", 3},
+		{"1 - 2", -1},
+		{"1 * 2", 2},
+		{"4 / 2", 2},
+		{"50 / 2 * 2 + 10 - 5", 55},
+		{"5 + 5 + 5 + 5 - 10", 10},
+		{"2 * 2 * 2 * 2 * 2", 32},
+		{"5 * 2 + 10", 20},
+		{"5 + 2 * 10", 25},
+		{"5 * (2 + 10)", 60},
 	}
 
 	runVmTests(t, tests)

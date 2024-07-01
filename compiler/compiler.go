@@ -41,6 +41,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
+		// after each expression statement append opPop opcode to
+		// clean the stack
+		c.emit(code.OpPop)
 	case ast.InfixExpression:
 		err := c.Compile(node.Left)
 		if err != nil {
@@ -55,6 +58,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 		switch node.Operator {
 		case "+":
 			c.emit(code.OpAdd)
+		case "-":
+			c.emit(code.OpSub)
+		case "/":
+			c.emit(code.OpDiv)
+		case "*":
+			c.emit(code.OpMul)
 		default:
 			return fmt.Errorf("unknown operator %s", node.Operator)
 		}
