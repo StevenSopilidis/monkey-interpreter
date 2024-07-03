@@ -44,8 +44,9 @@ func testExpectedObject(
 
 	switch expected := expected.(type) {
 	case int:
-		err := testIntegerObject(t, int64(expected), actual)
-		require.NoError(t, err)
+		testIntegerObject(t, int64(expected), actual)
+	case bool:
+		testBooleanObject(t, bool(expected), actual)
 	}
 }
 
@@ -55,13 +56,19 @@ func parse(input string) *ast.Program {
 	return p.ParseProgram()
 }
 
-func testIntegerObject(t *testing.T, expected int64, actual object.Object) error {
+func testBooleanObject(t *testing.T, expected bool, actual object.Object) {
+	result, ok := actual.(*object.Boolean)
+	require.True(t, ok)
+
+	require.Equal(t, expected, result.Value)
+}
+
+func testIntegerObject(t *testing.T, expected int64, actual object.Object) {
 	result, ok := actual.(*object.Integer)
 
 	require.True(t, ok)
 
 	require.Equal(t, expected, result.Value)
-	return nil
 }
 
 func TestIntegerArithmetic(t *testing.T) {
@@ -78,6 +85,32 @@ func TestIntegerArithmetic(t *testing.T) {
 		{"5 * 2 + 10", 20},
 		{"5 + 2 * 10", 25},
 		{"5 * (2 + 10)", 60},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestBooleanExpressions(t *testing.T) {
+	tests := []vmTestCase{
+		{"true", true},
+		{"false", false},
+		{"1 < 2", true},
+		{"1 > 2", false},
+		{"1 < 1", false},
+		{"1 > 1", false},
+		{"1 == 1", true},
+		{"1 != 1", false},
+		{"1 == 2", false},
+		{"1 != 2", true},
+		{"true == true", true},
+		{"false == false", true},
+		{"true == false", false},
+		{"true != false", true},
+		{"false != true", true},
+		{"(1 < 2) == true", true},
+		{"(1 < 2) == false", false},
+		{"(1 > 2) == true", false},
+		{"(1 > 2) == false", true},
 	}
 
 	runVmTests(t, tests)

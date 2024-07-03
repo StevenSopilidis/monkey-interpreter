@@ -60,6 +60,13 @@ const (
 	OpSub
 	OpMul
 	OpDiv
+	// opcodes that tell the vm to load object.Boolean into the stack
+	OpTrue
+	OpFalse
+	// opcodes for comparisons operators
+	OpEqual
+	OpNotEqual
+	OpGreaterThan
 )
 
 type Definition struct {
@@ -69,12 +76,17 @@ type Definition struct {
 
 // struct that holds definitions for all of our opcodes
 var definitions = map[Opcode]*Definition{
-	OpConstant: {"OpConstant", []int{2}},
-	OpAdd:      {"OpAdd", []int{}},
-	OpSub:      {"OpSub", []int{}},
-	OpMul:      {"OpMul", []int{}},
-	OpDiv:      {"OpDiv", []int{}},
-	OpPop:      {"OpPop", []int{}},
+	OpConstant:    {"OpConstant", []int{2}},
+	OpAdd:         {"OpAdd", []int{}},
+	OpSub:         {"OpSub", []int{}},
+	OpMul:         {"OpMul", []int{}},
+	OpDiv:         {"OpDiv", []int{}},
+	OpPop:         {"OpPop", []int{}},
+	OpTrue:        {"OpTrue", []int{}},
+	OpFalse:       {"OpFalse", []int{}},
+	OpEqual:       {"OpEqual", []int{}},
+	OpNotEqual:    {"OpNotEqual", []int{}},
+	OpGreaterThan: {"OpGreaterThan", []int{}},
 }
 
 func Lookup(op byte) (*Definition, error) {
