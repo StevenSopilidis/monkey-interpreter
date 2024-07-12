@@ -12,6 +12,9 @@ import (
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
 
+// global instance of NULL
+var Null = &object.Null{}
+
 const StackSize = 2048
 
 type VM struct {
@@ -83,10 +86,38 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpJump:
+			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip = pos - 1
+		case code.OpJumpNotTruthy:
+			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2 // skip the two bytes of address
+
+			condition := vm.pop()
+			if !isTruthy(condition) {
+				ip = pos - 1
+			}
+		case code.OpNull:
+			err := vm.push(Null)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+// function that determines if an object.Object is truthy
+func isTruthy(obj object.Object) bool {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	case *object.Null:
+		return false
+	default:
+		return true
+	}
 }
 
 func (vm *VM) executeBangOperator() error {
@@ -96,6 +127,8 @@ func (vm *VM) executeBangOperator() error {
 	case True:
 		return vm.push(False)
 	case False:
+		return vm.push(True)
+	case Null:
 		return vm.push(True)
 	default:
 		return vm.push(False)
