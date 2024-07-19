@@ -42,8 +42,17 @@ func testConstants(t *testing.T, expected []interface{}, actual []object.Object)
 		switch constant := constant.(type) {
 		case int:
 			testIntegerObject(t, int64(constant), actual[i])
+		case string:
+			testStringObject(t, constant, actual[i])
 		}
 	}
+}
+
+func testStringObject(t *testing.T, expected string, actual object.Object) {
+	result, ok := actual.(*object.String)
+
+	require.True(t, ok)
+	require.Equal(t, expected, result.Value)
 }
 
 func testIntegerObject(t *testing.T, expected int64, actual object.Object) {
@@ -61,6 +70,31 @@ func concatInstructions(instructions []code.Instructions) code.Instructions {
 	}
 
 	return out
+}
+
+func TestStringExpressions(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input:             `"monkey"`,
+			expectedConstants: []interface{}{"monkey"},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             `"mon" + "key"`,
+			expectedConstants: []interface{}{"mon", "key"},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, testCases)
 }
 
 func TestIntegerArithmetic(t *testing.T) {
@@ -295,4 +329,53 @@ func TestConditionals(t *testing.T) {
 	}
 
 	runCompilerTests(t, tests)
+}
+
+func TestGlobalStatements(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input: `
+			let one = 1;
+			let two = 2;
+			`,
+			expectedConstants: []interface{}{1, 2},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSetGlobal, 1),
+			},
+		},
+		{
+			input: `
+			let one = 1;
+			one;
+			`,
+			expectedConstants: []interface{}{1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+			let one = 1;
+			let two = one;
+			two;
+			`,
+			expectedConstants: []interface{}{1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpSetGlobal, 1),
+				code.Make(code.OpGetGlobal, 1),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, testCases)
 }

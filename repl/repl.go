@@ -7,6 +7,7 @@ import (
 
 	"github.com/stevensopilidis/monkey/compiler"
 	"github.com/stevensopilidis/monkey/lexer"
+	"github.com/stevensopilidis/monkey/object"
 	"github.com/stevensopilidis/monkey/parser"
 	"github.com/stevensopilidis/monkey/vm"
 )
@@ -15,6 +16,11 @@ const PROMPT = "--> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GlobalsSize)
+	symbolTable := compiler.NewSymbolTable()
+
 	for {
 		fmt.Print(out, PROMPT)
 
@@ -33,7 +39,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		comp := compiler.New()
+		comp := compiler.NewWithState(symbolTable, constants)
 		err := comp.Compile(program)
 
 		if err != nil {
@@ -41,7 +47,9 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		machine := vm.New(comp.Bytecode())
+		code := comp.Bytecode()
+		constants = code.Constants
+		machine := vm.NewWithGlobalsStore(code, globals)
 		err = machine.Run()
 
 		if err != nil {

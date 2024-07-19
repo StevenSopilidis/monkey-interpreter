@@ -15,13 +15,17 @@ var False = &object.Boolean{Value: false}
 // global instance of NULL
 var Null = &object.Null{}
 
-const StackSize = 2048
+const (
+	StackSize   = 2048
+	GlobalsSize = 65536
+)
 
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
 	stack        []object.Object
-	sp           int // stack pointer
+	sp           int             // stack pointer
+	globals      []object.Object // stores global variables
 }
 
 func New(byteCode *compiler.Bytecode) *VM {
@@ -30,7 +34,14 @@ func New(byteCode *compiler.Bytecode) *VM {
 		instructions: byteCode.Instructions,
 		stack:        make([]object.Object, StackSize),
 		sp:           0,
+		globals:      make([]object.Object, GlobalsSize),
 	}
+}
+
+func NewWithGlobalsStore(bytecode *compiler.Bytecode, s []object.Object) *VM {
+	vm := New(bytecode)
+	vm.globals = s
+	return vm
 }
 
 func (vm *VM) StackTop() object.Object {
@@ -99,6 +110,20 @@ func (vm *VM) Run() error {
 			}
 		case code.OpNull:
 			err := vm.push(Null)
+			if err != nil {
+				return err
+			}
+		case code.OpSetGlobal:
+			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+			// pop the top element of the stack which is the value that should
+			// be bound to the identifier
+			vm.globals[globalIndex] = vm.pop()
+		case code.OpGetGlobal:
+			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+			// push the identifiers value into the stack
+			err := vm.push(vm.globals[globalIndex])
 			if err != nil {
 				return err
 			}
