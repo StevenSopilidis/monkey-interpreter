@@ -79,6 +79,12 @@ const (
 	// opcodes for getting and setting variables at global level
 	OpGetGlobal
 	OpSetGlobal
+	// opcode for creating an array
+	OpArray
+	// opcode for creating a hash-map
+	OpHash
+	// opcode for indexing data-structures
+	OpIndex
 )
 
 type Definition struct {
@@ -106,6 +112,9 @@ var definitions = map[Opcode]*Definition{
 	OpNull:          {"OpNull", []int{}},
 	OpGetGlobal:     {"OpGetGlobal", []int{2}},
 	OpSetGlobal:     {"OpGetGlobal", []int{2}},
+	OpArray:         {"OpArray", []int{2}},
+	OpHash:          {"OpHash", []int{2}},
+	OpIndex:         {"OpIndex", []int{}},
 }
 
 func Lookup(op byte) (*Definition, error) {

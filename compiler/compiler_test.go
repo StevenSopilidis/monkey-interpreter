@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stevensopilidis/monkey/ast"
@@ -27,7 +26,6 @@ func parse(input string) *ast.Program {
 func testInstructions(t *testing.T, expected []code.Instructions, actual code.Instructions) {
 	concatted := concatInstructions(expected)
 
-	fmt.Println("----> ", actual.String())
 	require.Equal(t, len(concatted), len(actual))
 
 	for i, instruction := range concatted {
@@ -70,6 +68,130 @@ func concatInstructions(instructions []code.Instructions) code.Instructions {
 	}
 
 	return out
+}
+
+func TestHashLiterals(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input:             "{}",
+			expectedConstants: []interface{}{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpHash, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "{1: 2, 3: 4, 5: 6}",
+			expectedConstants: []interface{}{1, 2, 3, 4, 5, 6},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpConstant, 5),
+				code.Make(code.OpHash, 6),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "{1: 2 + 3, 4: 5 * 6}",
+			expectedConstants: []interface{}{1, 2, 3, 4, 5, 6},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpAdd),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpConstant, 5),
+				code.Make(code.OpMul),
+				code.Make(code.OpHash, 4),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, testCases)
+}
+
+func TestIndexExpressions(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input:             "[1, 2, 3][1 + 1]",
+			expectedConstants: []interface{}{1, 2, 3, 1, 1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpArray, 3),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpAdd),
+				code.Make(code.OpIndex),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "{1: 2}[2 - 1]",
+			expectedConstants: []interface{}{1, 2, 2, 1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpHash, 2),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpSub),
+				code.Make(code.OpIndex),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, testCases)
+}
+
+func TestArrayLiterals(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input:             "[]",
+			expectedConstants: []interface{}{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpArray, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "[1, 2, 3]",
+			expectedConstants: []interface{}{1, 2, 3},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpArray, 3),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "[1 + 2, 3 - 4, 5 * 6]",
+			expectedConstants: []interface{}{1, 2, 3, 4, 5, 6},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpSub),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpConstant, 5),
+				code.Make(code.OpMul),
+				code.Make(code.OpArray, 3),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, testCases)
 }
 
 func TestStringExpressions(t *testing.T) {
