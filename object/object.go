@@ -7,22 +7,24 @@ import (
 	"strings"
 
 	"github.com/stevensopilidis/monkey/ast"
+	"github.com/stevensopilidis/monkey/code"
 )
 
 type ObjectType string
 
 const (
-	INTEGER_OBJ      = "INTEGER"
-	BOOLEAN_OBJ      = "BOOLEAN"
-	FLOAT_OBJ        = "FLOAT"
-	NULL_OBJ         = "NULL"
-	RETURN_VALUE_OBJ = "RETURN_VALUE"
-	ERROR_OBJ        = "ERROR"
-	FUNCTION_OBJ     = "FUNCTION"
-	STRING_OBJ       = "STRING"
-	BULTIN_OBJ       = "BULTIN"
-	ARRAY_OBJ        = "ARRAY"
-	HASH_OBJ         = "HASH"
+	INTEGER_OBJ              = "INTEGER"
+	BOOLEAN_OBJ              = "BOOLEAN"
+	FLOAT_OBJ                = "FLOAT"
+	NULL_OBJ                 = "NULL"
+	RETURN_VALUE_OBJ         = "RETURN_VALUE"
+	ERROR_OBJ                = "ERROR"
+	FUNCTION_OBJ             = "FUNCTION"
+	STRING_OBJ               = "STRING"
+	BULTIN_OBJ               = "BULTIN"
+	ARRAY_OBJ                = "ARRAY"
+	HASH_OBJ                 = "HASH"
+	COMPILED_FUNCTION_OBJECT = "COMPILED_FUNCTION"
 )
 
 // environment will keep track of the values of the identifiers
@@ -168,6 +170,21 @@ func (s String) Type() ObjectType {
 
 func (s String) Inspect() string {
 	return s.Value
+}
+
+// struct that represensts an already compiled function
+type CompiledFunction struct {
+	Instructions  code.Instructions
+	NumLocals     int // number of local bindings used by the function
+	NumParameters int // nunmber of parameters of function
+}
+
+func (cf *CompiledFunction) Type() ObjectType {
+	return COMPILED_FUNCTION_OBJECT
+}
+
+func (cf *CompiledFunction) Inspect() string {
+	return fmt.Sprintf("CompiledFunction[%p]", cf)
 }
 
 // struct that represents a function

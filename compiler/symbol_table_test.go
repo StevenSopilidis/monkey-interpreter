@@ -6,21 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDefine(t *testing.T) {
-	expected := map[string]Symbol{
-		"a": {Name: "a", Index: 0, Scope: GlobalScope},
-		"b": {Name: "b", Index: 1, Scope: GlobalScope},
-	}
-
-	global := NewSymbolTable()
-
-	a := global.Define("a")
-	require.Equal(t, expected["a"], a)
-
-	b := global.Define("b")
-	require.Equal(t, expected["b"], b)
-}
-
 func TestResolveGlobal(t *testing.T) {
 	global := NewSymbolTable()
 
@@ -28,8 +13,8 @@ func TestResolveGlobal(t *testing.T) {
 	global.Define("b")
 
 	expected := []Symbol{
-		Symbol{Name: "a", Scope: GlobalScope, Index: 0},
-		Symbol{Name: "b", Scope: GlobalScope, Index: 1},
+		{Name: "a", Scope: GlobalScope, Index: 0},
+		{Name: "b", Scope: GlobalScope, Index: 1},
 	}
 
 	for _, exp := range expected {
@@ -37,4 +22,106 @@ func TestResolveGlobal(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, exp, result)
 	}
+}
+
+func TestResolveLocal(t *testing.T) {
+	global := NewSymbolTable()
+
+	global.Define("a")
+	global.Define("b")
+
+	local := NewEnclosedSymbolTable(global)
+	local.Define("c")
+	local.Define("d")
+
+	expected := []Symbol{
+		{Name: "a", Scope: GlobalScope, Index: 0},
+		{Name: "b", Scope: GlobalScope, Index: 1},
+		{Name: "c", Scope: LocalScope, Index: 0},
+		{Name: "d", Scope: LocalScope, Index: 1},
+	}
+
+	for _, exp := range expected {
+		result, ok := local.Resolve(exp.Name)
+		require.True(t, ok)
+		require.Equal(t, exp, result)
+	}
+}
+
+func TestResolveNestedLoacl(t *testing.T) {
+	global := NewSymbolTable()
+	global.Define("a")
+	global.Define("b")
+
+	firstLocal := NewEnclosedSymbolTable(global)
+	firstLocal.Define("c")
+	firstLocal.Define("d")
+
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+	secondLocal.Define("e")
+	secondLocal.Define("f")
+
+	testCases := []struct {
+		table           *SymbolTable
+		expectedSymbols []Symbol
+	}{
+		{
+			firstLocal,
+			[]Symbol{
+				{Name: "a", Scope: GlobalScope, Index: 0},
+				{Name: "b", Scope: GlobalScope, Index: 1},
+				{Name: "c", Scope: LocalScope, Index: 0},
+				{Name: "d", Scope: LocalScope, Index: 1},
+			},
+		},
+		{
+			secondLocal,
+			[]Symbol{
+				{Name: "a", Scope: GlobalScope, Index: 0},
+				{Name: "b", Scope: GlobalScope, Index: 1},
+				{Name: "e", Scope: LocalScope, Index: 0},
+				{Name: "f", Scope: LocalScope, Index: 1},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, expected := range tc.expectedSymbols {
+			result, ok := tc.table.Resolve(expected.Name)
+			require.True(t, ok)
+			require.Equal(t, expected, result)
+		}
+	}
+}
+
+func TestDefine(t *testing.T) {
+	expected := map[string]Symbol{
+		"a": {Name: "a", Scope: GlobalScope, Index: 0},
+		"b": {Name: "b", Scope: GlobalScope, Index: 1},
+		"c": {Name: "c", Scope: LocalScope, Index: 0},
+		"d": {Name: "d", Scope: LocalScope, Index: 1},
+		"e": {Name: "e", Scope: LocalScope, Index: 0},
+		"f": {Name: "f", Scope: LocalScope, Index: 1},
+	}
+
+	global := NewSymbolTable()
+	a := global.Define("a")
+	require.Equal(t, a, expected["a"])
+
+	b := global.Define("b")
+	require.Equal(t, b, expected["b"])
+
+	firstLocal := NewEnclosedSymbolTable(global)
+	c := firstLocal.Define("c")
+	require.Equal(t, c, expected["c"])
+
+	d := firstLocal.Define("d")
+	require.Equal(t, d, expected["d"])
+
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+	e := secondLocal.Define("e")
+	require.Equal(t, e, expected["e"])
+
+	f := secondLocal.Define("f")
+	require.Equal(t, f, expected["f"])
 }

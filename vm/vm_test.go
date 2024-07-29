@@ -220,6 +220,241 @@ func TestIndexExpressions(t *testing.T) {
 	runVmTests(t, testCases)
 }
 
+func TestFunctionsWithoutReturnValue(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+			let noReturn = fn() { };
+			noReturn();
+			`,
+			expected: Null,
+		},
+		{
+			input: `
+			let noReturn = fn() { };
+			let noReturnTwo = fn() { noReturn(); };
+			noReturn();
+			noReturnTwo();
+			`,
+			expected: Null,
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
+func TestFirstClassFunctions(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+	let returnsOne = fn() { 1; };
+	let returnsOneReturner = fn() { returnsOne; };
+	returnsOneReturner()();
+	`,
+			expected: 1,
+		},
+		{
+			input: `
+			let returnsOneReturner = fn() {
+			let returnsOne = fn() { 1; };
+			returnsOne;
+			};
+			returnsOneReturner()();
+			`,
+			expected: 1,
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
+func TestCallingFunctionsWithBindings(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+			let one = fn() { let one = 1; one };
+			one();
+			`,
+			expected: 1,
+		},
+		{
+			input: `
+		let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+		oneAndTwo();
+		`,
+			expected: 3,
+		},
+		{
+			input: `
+		let vre = 10;
+		let oneAndTwo = fn() { let one = 1; let two = 2; one + two + vre; };
+		let threeAndFour = fn() { let three = 3; let four = 4; three + four; };
+		oneAndTwo() + threeAndFour();
+		`,
+			expected: 20,
+		},
+		{
+			input: `
+		let firstFoobar = fn() { 
+			let foobar = 50; 
+			foobar; 
+		};
+		let secondFoobar = fn() { 
+			let foobar = 100; 
+			foobar; 
+		};
+		firstFoobar() + secondFoobar();
+		`,
+			expected: 150,
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
+func TestCallingFunctionsWithArgumentsAndBindings(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+			let identity = fn(a) { a; };
+			identity(4);
+			`,
+			expected: 4,
+		},
+		{
+			input: `
+			let sum = fn(a, b) { a + b; };
+			sum(1, 2);
+			`,
+			expected: 3,
+		},
+		{
+			input: `
+			let sum = fn(a, b) {
+			let c = a + b;
+			c;
+			};
+			sum(1, 2);
+			`,
+			expected: 3,
+		},
+		{
+			input: `
+			let sum = fn(a, b) {
+			let c = a + b;
+			c;
+			};
+			sum(1, 2) + sum(3, 4);`,
+			expected: 10,
+		},
+		{
+			input: `
+			let sum = fn(a, b) {
+			let c = a + b;
+			c;
+			};
+			let outer = fn() {
+			sum(1, 2) + sum(3, 4);
+			};
+			outer();
+			`,
+			expected: 10,
+		},
+		{
+			input: `
+			let globalNum = 10;
+			let sum = fn(a, b) {
+			let c = a + b;
+			c + globalNum;
+			};
+			let outer = fn() {
+			sum(1, 2) + sum(3, 4) + globalNum;
+			};
+			outer() + globalNum;
+			`,
+			expected: 50,
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
+func TestCallingFunctionsWithWrongArguments(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input:    `fn() { 1; }(1);`,
+			expected: `wrong number of arguments: want=0, got=1`,
+		},
+		{
+			input:    `fn(a) { a; }();`,
+			expected: `wrong number of arguments: want=1, got=0`,
+		},
+		{
+			input:    `fn(a, b) { a + b; }(1);`,
+			expected: `wrong number of arguments: want=2, got=1`,
+		},
+	}
+
+	for _, tc := range testCases {
+		program := parse(tc.input)
+		comp := compiler.New()
+		err := comp.Compile(program)
+
+		require.NoError(t, err)
+		vm := New(comp.Bytecode())
+
+		err = vm.Run()
+		require.NotNil(t, err)
+
+		require.Equal(t, tc.expected, err.Error())
+	}
+}
+
+func TestCallingFunctionsWithoutArguments(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+			let fivePlusTen = fn() { 5 + 10; };
+			fivePlusTen();
+			`,
+			expected: 15,
+		},
+		{
+			input: `
+			let one = fn() { 1; };
+			let two = fn() { 2; };
+			one() + two()
+			`,
+			expected: 3,
+		},
+		{
+			input: `
+			let a = fn() { 1 };
+			let b = fn() { a() + 1 };
+			let c = fn() { b() + 1 };
+			c();
+			`,
+			expected: 3,
+		},
+		{
+			input: `
+			let earlyExit = fn() { return 99; 100; };
+			earlyExit();
+			`,
+			expected: 99,
+		},
+		{
+			input: `
+			let earlyExit = fn() { return 99; return 100; };
+			earlyExit();
+			`,
+			expected: 99,
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
 func TestConditionals(t *testing.T) {
 	testCases := []vmTestCase{
 		{"if (true) { 10 }", 10},
