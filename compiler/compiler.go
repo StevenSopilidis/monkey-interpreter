@@ -43,12 +43,19 @@ type Bytecode struct {
 }
 
 func New() *Compiler {
+	// push builtins functions into symbol table
+	table := NewSymbolTable()
+
+	for i, v := range object.Builtins {
+		table.DefineBuiltin(i, v.Name)
+	}
+
 	return &Compiler{
 		instructions: code.Instructions{},
 		constants:    []object.Object{},
 		scopes:       make([]CompilationScope, 1),
 		scopeIndex:   0,
-		symbolTable:  NewSymbolTable(),
+		symbolTable:  table,
 	}
 }
 
@@ -255,12 +262,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined variable %s", node.Value)
 		}
 
-		// emit correct get opcode based on the scope
-		if symbol.Scope == GlobalScope {
-			c.emit(code.OpGetGlobal, symbol.Index)
-		} else {
-			c.emit(code.OpGetLocal, symbol.Index)
-		}
+		c.loadSymbol(symbol)
 	case ast.IndexExpression:
 		err := c.Compile(node.Left)
 		if err != nil {
@@ -329,6 +331,18 @@ func (c *Compiler) Compile(node ast.Node) error {
 	}
 
 	return nil
+}
+
+// function for emmiting correct instruction based on Symbol scope
+func (c *Compiler) loadSymbol(s Symbol) {
+	switch s.Scope {
+	case GlobalScope:
+		c.emit(code.OpGetGlobal, s.Index)
+	case LocalScope:
+		c.emit(code.OpGetLocal, s.Index)
+	case BuiltinScope:
+		c.emit(code.OpGetBuiltin, s.Index)
+	}
 }
 
 // function for replacing pop with return

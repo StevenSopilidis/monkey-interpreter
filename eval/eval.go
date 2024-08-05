@@ -179,8 +179,12 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		extendedEnv := extendedFunctionEnv(fn, args)
 		evaluated := Eval(fn.Body, extendedEnv)
 		return unwrapReturnValue(evaluated)
-	case object.Bultin:
-		return fn.Fn(args...)
+	case *object.Builtin:
+		if result := fn.Fn(args...); result != nil {
+			return result
+		}
+
+		return NULL
 	default:
 		return newError("not a function: %s", fn.Type())
 	}
@@ -229,8 +233,8 @@ func evalIdentifier(node ast.Identifier, env *object.Environment) object.Object 
 		return val
 	}
 
-	if bultin, ok := bultins[node.Value]; ok {
-		return bultin
+	if Builtin, ok := Builtins[node.Value]; ok {
+		return Builtin
 	}
 
 	return newError("identifier not found: " + node.Value)

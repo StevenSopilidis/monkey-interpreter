@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stevensopilidis/monkey/lexer"
@@ -158,7 +157,7 @@ func TestArrayLiterals(t *testing.T) {
 	testIntegerObject(t, result.Elements[2], 6)
 }
 
-func TestBultinFunctions(t *testing.T) {
+func TestBuiltinFunctions(t *testing.T) {
 	testCases := []struct {
 		input    string
 		expected interface{}
@@ -510,9 +509,6 @@ func testEval(input string) object.Object {
 
 // function for testing the value of Integer Object
 func testIntegerObject(t *testing.T, obj object.Object, expected int64) {
-	if obj == nil {
-		fmt.Println("NILLL")
-	}
 	result, ok := obj.(*object.Integer)
 	require.True(t, ok)
 

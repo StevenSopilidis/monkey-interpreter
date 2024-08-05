@@ -21,7 +21,7 @@ const (
 	ERROR_OBJ                = "ERROR"
 	FUNCTION_OBJ             = "FUNCTION"
 	STRING_OBJ               = "STRING"
-	BULTIN_OBJ               = "BULTIN"
+	Builtin_OBJ              = "Builtin"
 	ARRAY_OBJ                = "ARRAY"
 	HASH_OBJ                 = "HASH"
 	COMPILED_FUNCTION_OBJECT = "COMPILED_FUNCTION"
@@ -145,18 +145,18 @@ func (arr Array) Inspect() string {
 }
 
 // built in function
-type BultinFunction func(args ...Object) Object
+type BuiltinFunction func(args ...Object) Object
 
-type Bultin struct {
-	Fn BultinFunction
+type Builtin struct {
+	Fn BuiltinFunction
 }
 
-func (b Bultin) Type() ObjectType {
-	return BULTIN_OBJ
+func (b Builtin) Type() ObjectType {
+	return Builtin_OBJ
 }
 
-func (b Bultin) Inspect() string {
-	return "bultin function"
+func (b Builtin) Inspect() string {
+	return "Builtin function"
 }
 
 // struct representing a string
